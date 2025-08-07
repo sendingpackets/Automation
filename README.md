@@ -19,7 +19,7 @@ Original: https://github.com/gcampos04/wplace-automation
 **Paste this code into the console and press Enter:**
 
 ```javascript
-fetch('https://raw.githubusercontent.com/gcampos04/wplace-automation/main/wplace-bot.js').then(r=>r.text()).then(eval)
+fetch('https://raw.githubusercontent.com/sendingpackets/Automation/refs/heads/main/wplace-bot.js').then(r=>r.text()).then(eval)
 ```
 
 **Wait to see:**
