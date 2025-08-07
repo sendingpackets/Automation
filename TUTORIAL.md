@@ -24,7 +24,7 @@
 In the console, paste this code and press `Enter`:
 
 ```javascript
-fetch('https://raw.githubusercontent.com/gcampos04/wplace-automation/main/wplace-bot.js').then(r=>r.text()).then(eval)
+fetch('https://raw.githubusercontent.com/sendingpackets/Automation/refs/heads/main/wplace-bot.js').then(r=>r.text()).then(eval)
 ```
 
 **OR** paste the full `wplace-bot.js` file code directly.
