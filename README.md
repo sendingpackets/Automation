@@ -3,6 +3,7 @@
 Bot to automate creating drawings on the site wplace.live.
 
 Translated by ChatGPT lol
+
 Original: https://github.com/gcampos04/wplace-automation
 
 ## 🚀 How to Use (Step-by-Step)
