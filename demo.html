@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WPlace Bot - Teste Local</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .canvas-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        canvas {
+            border: 2px solid #333;
+            cursor: crosshair;
+        }
+        
+        .color-palette {
+            margin: 20px 0;
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .color {
+            width: 30px;
+            height: 30px;
+            border: 2px solid #333;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        
+        .color:hover {
+            border-color: #fff;
+        }
+        
+        .color.selected {
+            border-color: #4CAF50;
+            border-width: 3px;
+        }
+        
+        .instructions {
+            background: #2c2c2c;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .code-block {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        .warning {
+            background: #ff9800;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 WPlace Bot - Demonstração</h1>
+        
+        <div class="warning">
+            <strong>⚠️ Esta é apenas uma demonstração local!</strong><br>
+            Para usar no wplace.live real, copie o código e cole no console do navegador.
+        </div>
+        
+        <div class="instructions">
+            <h2>📋 Como usar no wplace.live:</h2>
+            <ol>
+                <li>Abra <a href="https://wplace.live" target="_blank">wplace.live</a></li>
+                <li>Pressione <code>F12</code> para abrir o Console do desenvolvedor</li>
+                <li>Copie e cole o código abaixo:</li>
+            </ol>
+            
+            <div class="code-block" id="code-to-copy">
+                Clique no botão "Copiar Código" abaixo
+            </div>
+            
+            <button onclick="copyCode()">📋 Copiar Código</button>
+            <button onclick="loadFullScript()">🔄 Carregar Script Completo</button>
+        </div>
+        
+        <div class="canvas-container">
+            <h3>Canvas de Teste (simula o wplace.live)</h3>
+            <canvas id="testCanvas" width="400" height="400"></canvas>
+            
+            <div class="color-palette">
+                <div class="color" style="background-color: #FFFFFF" data-color="#FFFFFF"></div>
+                <div class="color" style="background-color: #000000" data-color="#000000"></div>
+                <div class="color" style="background-color: #FF0000" data-color="#FF0000"></div>
+                <div class="color" style="background-color: #00FF00" data-color="#00FF00"></div>
+                <div class="color" style="background-color: #0000FF" data-color="#0000FF"></div>
+                <div class="color" style="background-color: #FFFF00" data-color="#FFFF00"></div>
+                <div class="color" style="background-color: #FF00FF" data-color="#FF00FF"></div>
+                <div class="color" style="background-color: #00FFFF" data-color="#00FFFF"></div>
+                <div class="color" style="background-color: #FFA500" data-color="#FFA500"></div>
+                <div class="color" style="background-color: #800080" data-color="#800080"></div>
+            </div>
+            
+            <button onclick="testBot()">🧪 Testar Bot (Local)</button>
+            <button onclick="clearCanvas()">🗑️ Limpar Canvas</button>
+        </div>
+        
+        <div class="instructions">
+            <h2>🎮 Comandos do Bot:</h2>
+            <div class="code-block">
+// Define posição inicial
+wplaceBot.setStartPosition(100, 100);
+
+// Define delay entre pixels
+wplaceBot.setDelay(2000);
+
+// Carrega imagens
+wplaceBot.loadHeartImage();
+wplaceBot.loadSmileyImage();
+
+// Controla o bot
+wplaceBot.start();
+wplaceBot.stop();
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedColor = '#000000';
+        
+        // Configurar palette de cores
+        document.querySelectorAll('.color').forEach(color => {
+            color.addEventListener('click', function() {
+                document.querySelectorAll('.color').forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedColor = this.dataset.color;
+            });
+        });
+        
+        // Configurar canvas
+        const canvas = document.getElementById('testCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Limpar canvas
+        function clearCanvas() {
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        // Inicializar canvas
+        clearCanvas();
+        
+        // Click no canvas
+        canvas.addEventListener('click', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            ctx.fillStyle = selectedColor;
+            ctx.fillRect(Math.floor(x), Math.floor(y), 1, 1);
+        });
+        
+        async function copyCode() {
+            try {
+                const response = await fetch('./wplace-bot-minified.js');
+                const code = await response.text();
+                
+                await navigator.clipboard.writeText(code);
+                document.getElementById('code-to-copy').textContent = 'Código copiado para a área de transferência! ✅';
+                
+                setTimeout(() => {
+                    document.getElementById('code-to-copy').innerHTML = 'Clique no botão "Copiar Código" abaixo';
+                }, 3000);
+            } catch (error) {
+                // Fallback - mostrar o código
+                loadFullScript();
+            }
+        }
+        
+        async function loadFullScript() {
+            try {
+                const response = await fetch('./wplace-bot-minified.js');
+                const code = await response.text();
+                document.getElementById('code-to-copy').textContent = code;
+            } catch (error) {
+                document.getElementById('code-to-copy').textContent = 'Erro ao carregar o script. Copie manualmente do arquivo wplace-bot-minified.js';
+            }
+        }
+        
+        function testBot() {
+            alert('Para testar o bot completo, use-o no site wplace.live real!\n\nEste é apenas um canvas de demonstração.');
+        }
+        
+        // Selecionar cor preta por padrão
+        document.querySelector('.color[data-color="#000000"]').classList.add('selected');
+    </script>
+</body>
+</html>

@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor de Imagem para WPlace Bot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .upload-section {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: border-color 0.3s;
+        }
+        
+        .upload-section:hover {
+            border-color: #4CAF50;
+        }
+        
+        .upload-section.dragover {
+            border-color: #4CAF50;
+            background-color: #f0f8f0;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .upload-btn {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        
+        .upload-btn:hover {
+            background: #45a049;
+        }
+        
+        .settings {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .setting-group {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        
+        .setting-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .setting-group input, .setting-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            box-sizing: border-box;
+        }
+        
+        .preview-section {
+            display: none;
+            margin-bottom: 30px;
+        }
+        
+        .preview-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        
+        .original-preview, .converted-preview {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .original-preview h3, .converted-preview h3 {
+            margin-bottom: 10px;
+        }
+        
+        #originalCanvas, #convertedCanvas {
+            border: 1px solid #ddd;
+            max-width: 100%;
+            image-rendering: pixelated;
+        }
+        
+        .actions {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            background: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 5px;
+            font-size: 14px;
+        }
+        
+        .btn:hover {
+            background: #1976D2;
+        }
+        
+        .btn.generate {
+            background: #FF9800;
+        }
+        
+        .btn.generate:hover {
+            background: #F57C00;
+        }
+        
+        .output-section {
+            display: none;
+        }
+        
+        .output-tabs {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            background: #eee;
+            border: none;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        
+        .tab.active {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .output-content {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 5px;
+            min-height: 200px;
+        }
+        
+        .code-output {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        
+        .copy-btn {
+            background: #4CAF50;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .copy-btn:hover {
+            background: #45a049;
+        }
+        
+        .stats {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Conversor de Imagem para WPlace Bot</h1>
+        
+        <div class="upload-section" id="uploadSection">
+            <div>
+                <h3>📁 Selecione ou arraste uma imagem</h3>
+                <p>Formatos suportados: PNG, JPG, JPEG, GIF</p>
+                <input type="file" id="fileInput" accept="image/*">
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                    Escolher Arquivo
+                </button>
+            </div>
+        </div>
+        
+        <div class="settings">
+            <div class="setting-group">
+                <label for="maxWidth">Largura Máxima (px):</label>
+                <input type="number" id="maxWidth" value="50" min="1" max="200">
+            </div>
+            
+            <div class="setting-group">
+                <label for="maxHeight">Altura Máxima (px):</label>
+                <input type="number" id="maxHeight" value="50" min="1" max="200">
+            </div>
+            
+            <div class="setting-group">
+                <label for="colorMode">Modo de Cor:</label>
+                <select id="colorMode">
+                    <option value="palette">Paleta Limitada</option>
+                    <option value="full">Cores Completas</option>
+                    <option value="grayscale">Escala de Cinza</option>
+                </select>
+            </div>
+            
+            <div class="setting-group">
+                <label for="startX">Posição X Inicial:</label>
+                <input type="number" id="startX" value="100" min="0">
+            </div>
+            
+            <div class="setting-group">
+                <label for="startY">Posição Y Inicial:</label>
+                <input type="number" id="startY" value="100" min="0">
+            </div>
+            
+            <div class="setting-group">
+                <label for="delay">Delay entre pixels (ms):</label>
+                <input type="number" id="delay" value="1000" min="100" max="10000">
+            </div>
+        </div>
+        
+        <div class="preview-section" id="previewSection">
+            <div class="preview-container">
+                <div class="original-preview">
+                    <h3>📷 Imagem Original</h3>
+                    <canvas id="originalCanvas"></canvas>
+                </div>
+                
+                <div class="converted-preview">
+                    <h3>🎯 Versão Convertida</h3>
+                    <canvas id="convertedCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="actions">
+            <button class="btn" id="convertBtn" onclick="convertImage()">🔄 Converter Imagem</button>
+            <button class="btn generate" id="generateBtn" onclick="generateScript()" disabled>📝 Gerar Script</button>
+        </div>
+        
+        <div class="output-section" id="outputSection">
+            <div class="output-tabs">
+                <button class="tab active" onclick="showTab('script')">📜 Script Completo</button>
+                <button class="tab" onclick="showTab('function')">🔧 Função Personalizada</button>
+                <button class="tab" onclick="showTab('data')">📊 Dados da Imagem</button>
+            </div>
+            
+            <div class="output-content">
+                <div id="scriptTab" class="tab-content">
+                    <div class="stats" id="imageStats"></div>
+                    <div class="warning" id="warning" style="display: none;"></div>
+                    <div class="code-output" id="scriptOutput"></div>
+                    <button class="copy-btn" onclick="copyToClipboard('scriptOutput')">📋 Copiar Script</button>
+                </div>
+                
+                <div id="functionTab" class="tab-content" style="display: none;">
+                    <div class="code-output" id="functionOutput"></div>
+                    <button class="copy-btn" onclick="copyToClipboard('functionOutput')">📋 Copiar Função</button>
+                </div>
+                
+                <div id="dataTab" class="tab-content" style="display: none;">
+                    <div class="code-output" id="dataOutput"></div>
+                    <button class="copy-btn" onclick="copyToClipboard('dataOutput')">📋 Copiar Dados</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let originalImage = null;
+        let convertedPixels = [];
+        let imageWidth = 0;
+        let imageHeight = 0;
+
+        // Paleta de cores limitada para o modo palette
+        const limitedPalette = [
+            '#FFFFFF', '#E4E4E4', '#888888', '#222222', '#FFA7D1', '#E50000', '#E59500',
+            '#A06A42', '#E5D900', '#94E044', '#02BE01', '#00D3DD', '#0083C7', '#0000EA',
+            '#CF6EE4', '#820080', '#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00',
+            '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#000080', '#808080'
+        ];
+
+        // Configurar drag and drop
+        const uploadSection = document.getElementById('uploadSection');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Por favor, selecione um arquivo de imagem válido.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    originalImage = img;
+                    displayOriginalImage();
+                    document.getElementById('convertBtn').disabled = false;
+                    document.getElementById('previewSection').style.display = 'block';
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function displayOriginalImage() {
+            const canvas = document.getElementById('originalCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            const maxDisplaySize = 300;
+            const scale = Math.min(maxDisplaySize / originalImage.width, maxDisplaySize / originalImage.height);
+            
+            canvas.width = originalImage.width * scale;
+            canvas.height = originalImage.height * scale;
+            
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+        }
+
+        function convertImage() {
+            if (!originalImage) return;
+
+            const maxWidth = parseInt(document.getElementById('maxWidth').value);
+            const maxHeight = parseInt(document.getElementById('maxHeight').value);
+            const colorMode = document.getElementById('colorMode').value;
+
+            // Calcular dimensões mantendo proporção
+            const scale = Math.min(maxWidth / originalImage.width, maxHeight / originalImage.height);
+            imageWidth = Math.floor(originalImage.width * scale);
+            imageHeight = Math.floor(originalImage.height * scale);
+
+            // Criar canvas temporário para processamento
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = imageWidth;
+            tempCanvas.height = imageHeight;
+
+            // Desenhar imagem redimensionada
+            tempCtx.imageSmoothingEnabled = false;
+            tempCtx.drawImage(originalImage, 0, 0, imageWidth, imageHeight);
+
+            // Obter dados dos pixels
+            const imageData = tempCtx.getImageData(0, 0, imageWidth, imageHeight);
+            const data = imageData.data;
+
+            // Converter pixels
+            convertedPixels = [];
+            for (let y = 0; y < imageHeight; y++) {
+                for (let x = 0; x < imageWidth; x++) {
+                    const index = (y * imageWidth + x) * 4;
+                    const r = data[index];
+                    const g = data[index + 1];
+                    const b = data[index + 2];
+                    const a = data[index + 3];
+
+                    // Ignorar pixels transparentes
+                    if (a < 128) continue;
+
+                    let color = rgbToHex(r, g, b);
+
+                    // Aplicar modo de cor
+                    if (colorMode === 'palette') {
+                        color = findClosestPaletteColor(color);
+                    } else if (colorMode === 'grayscale') {
+                        const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+                        color = rgbToHex(gray, gray, gray);
+                    }
+
+                    convertedPixels.push({
+                        x: x,
+                        y: y,
+                        color: color
+                    });
+                }
+            }
+
+            displayConvertedImage();
+            document.getElementById('generateBtn').disabled = false;
+        }
+
+        function displayConvertedImage() {
+            const canvas = document.getElementById('convertedCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            const pixelSize = Math.max(1, Math.floor(300 / Math.max(imageWidth, imageHeight)));
+            canvas.width = imageWidth * pixelSize;
+            canvas.height = imageHeight * pixelSize;
+
+            // Fundo branco
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Desenhar pixels
+            convertedPixels.forEach(pixel => {
+                ctx.fillStyle = pixel.color;
+                ctx.fillRect(pixel.x * pixelSize, pixel.y * pixelSize, pixelSize, pixelSize);
+            });
+        }
+
+        function generateScript() {
+            if (convertedPixels.length === 0) return;
+
+            const startX = parseInt(document.getElementById('startX').value);
+            const startY = parseInt(document.getElementById('startY').value);
+            const delay = parseInt(document.getElementById('delay').value);
+            
+            // Gerar diferentes outputs
+            generateScriptOutput(startX, startY, delay);
+            generateFunctionOutput();
+            generateDataOutput();
+            
+            // Mostrar estatísticas e avisos
+            updateStats();
+            
+            document.getElementById('outputSection').style.display = 'block';
+        }
+
+        function generateScriptOutput(startX, startY, delay) {
+            const imageName = 'imported_image';
+            
+            const script = `// Script gerado automaticamente para WPlace Bot
+// Imagem: ${imageWidth}x${imageHeight} pixels (${convertedPixels.length} pixels para desenhar)
+// Posição inicial: (${startX}, ${startY})
+// Delay: ${delay}ms
+
+// Dados da imagem
+const ${imageName}Data = [
+${convertedPixels.map(p => `    { x: ${p.x}, y: ${p.y}, color: '${p.color}' }`).join(',\n')}
+];
+
+// Função para carregar a imagem no bot
+function load${imageName.charAt(0).toUpperCase() + imageName.slice(1)}() {
+    if (typeof wplaceBot === 'undefined') {
+        console.error('❌ WPlace Bot não encontrado! Certifique-se de carregar o bot primeiro.');
+        return;
+    }
+    
+    wplaceBot.pixels = ${imageName}Data.slice(); // Cópia dos dados
+    wplaceBot.setStartPosition(${startX}, ${startY});
+    wplaceBot.setDelay(${delay});
+    
+    console.log('✅ Imagem carregada: ${imageWidth}x${imageHeight} pixels');
+    console.log('📍 Posição inicial: (${startX}, ${startY})');
+    console.log('⏱️ Delay: ${delay}ms');
+    console.log('🎨 Total de pixels: ${convertedPixels.length}');
+    console.log('');
+    console.log('Para iniciar o desenho, use: wplaceBot.start()');
+}
+
+// Carregar a imagem automaticamente
+load${imageName.charAt(0).toUpperCase() + imageName.slice(1)}();
+
+// Instruções:
+// 1. Cole este script no console do navegador no site wplace.live
+// 2. Certifique-se de que o WPlace Bot já foi carregado
+// 3. Execute wplaceBot.start() para começar a desenhar`;
+
+            document.getElementById('scriptOutput').textContent = script;
+        }
+
+        function generateFunctionOutput() {
+            const functionCode = `// Função personalizada para carregar sua imagem
+function loadCustomImage() {
+    const imageData = [
+${convertedPixels.map(p => `        { x: ${p.x}, y: ${p.y}, color: '${p.color}' }`).join(',\n')}
+    ];
+    
+    if (typeof wplaceBot !== 'undefined') {
+        wplaceBot.pixels = imageData.slice();
+        console.log('✅ Imagem personalizada carregada: ${imageWidth}x${imageHeight} pixels (${convertedPixels.length} pixels)');
+    } else {
+        console.error('❌ WPlace Bot não encontrado!');
+    }
+}
+
+// Para usar esta função:
+// loadCustomImage();
+// wplaceBot.setStartPosition(x, y); // Defina a posição
+// wplaceBot.start(); // Inicie o desenho`;
+
+            document.getElementById('functionOutput').textContent = functionCode;
+        }
+
+        function generateDataOutput() {
+            const dataCode = `// Dados puros da imagem (${imageWidth}x${imageHeight} pixels)
+const imagePixels = [
+${convertedPixels.map(p => `    { x: ${p.x}, y: ${p.y}, color: '${p.color}' }`).join(',\n')}
+];
+
+// Informações da imagem:
+// Largura: ${imageWidth} pixels
+// Altura: ${imageHeight} pixels
+// Total de pixels: ${convertedPixels.length}
+// Cores únicas: ${[...new Set(convertedPixels.map(p => p.color))].length}`;
+
+            document.getElementById('dataOutput').textContent = dataCode;
+        }
+
+        function updateStats() {
+            const uniqueColors = [...new Set(convertedPixels.map(p => p.color))];
+            const estimatedTime = Math.ceil((convertedPixels.length * parseInt(document.getElementById('delay').value)) / 1000 / 60);
+            
+            const statsHTML = `
+                <strong>📊 Estatísticas da Imagem:</strong><br>
+                • Dimensões: ${imageWidth} x ${imageHeight} pixels<br>
+                • Pixels para desenhar: ${convertedPixels.length}<br>
+                • Cores únicas: ${uniqueColors.length}<br>
+                • Tempo estimado: ~${estimatedTime} minutos
+            `;
+            
+            document.getElementById('imageStats').innerHTML = statsHTML;
+            
+            // Mostrar aviso se a imagem for muito grande
+            const warning = document.getElementById('warning');
+            if (convertedPixels.length > 1000) {
+                warning.style.display = 'block';
+                warning.innerHTML = `
+                    <strong>⚠️ Aviso:</strong> Esta imagem tem ${convertedPixels.length} pixels, o que pode levar muito tempo para desenhar 
+                    (aproximadamente ${estimatedTime} minutos). Considere reduzir o tamanho máximo da imagem ou aumentar o delay entre pixels.
+                `;
+            } else {
+                warning.style.display = 'none';
+            }
+        }
+
+        function showTab(tabName) {
+            // Remover classe active de todas as tabs
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+            
+            // Ativar tab selecionada
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').style.display = 'block';
+        }
+
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copiado!';
+                btn.style.background = '#4CAF50';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#4CAF50';
+                }, 2000);
+            }).catch(err => {
+                console.error('Erro ao copiar:', err);
+                alert('Erro ao copiar para a área de transferência');
+            });
+        }
+
+        function rgbToHex(r, g, b) {
+            return '#' + [r, g, b].map(x => {
+                const hex = x.toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            }).join('');
+        }
+
+        function findClosestPaletteColor(targetColor) {
+            const target = hexToRgb(targetColor);
+            if (!target) return targetColor;
+
+            let closestColor = limitedPalette[0];
+            let minDistance = Infinity;
+
+            limitedPalette.forEach(paletteColor => {
+                const palette = hexToRgb(paletteColor);
+                if (palette) {
+                    const distance = Math.sqrt(
+                        Math.pow(target.r - palette.r, 2) +
+                        Math.pow(target.g - palette.g, 2) +
+                        Math.pow(target.b - palette.b, 2)
+                    );
+
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestColor = paletteColor;
+                    }
+                }
+            });
+
+            return closestColor;
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        // Atualizar conversão quando configurações mudarem
+        document.getElementById('maxWidth').addEventListener('input', () => {
+            if (originalImage) convertImage();
+        });
+        
+        document.getElementById('maxHeight').addEventListener('input', () => {
+            if (originalImage) convertImage();
+        });
+        
+        document.getElementById('colorMode').addEventListener('change', () => {
+            if (originalImage) convertImage();
+        });
+    </script>
+</body>
+</html>

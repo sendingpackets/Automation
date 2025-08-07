@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de Pixel Art - WPlace Bot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            gap: 20px;
+            padding: 20px;
+            min-height: 600px;
+        }
+
+        .sidebar {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .sidebar h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 5px;
+        }
+
+        .canvas-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .canvas-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .control-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .control-btn.primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .control-btn.primary:hover {
+            background: #5a67d8;
+        }
+
+        .control-btn.secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .control-btn.secondary:hover {
+            background: #cbd5e0;
+        }
+
+        .control-btn.danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .control-btn.danger:hover {
+            background: #e53e3e;
+        }
+
+        #pixelCanvas {
+            border: 2px solid #ddd;
+            cursor: crosshair;
+            image-rendering: pixelated;
+            background: 
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(0,0,0,0.03),
+                    rgba(0,0,0,0.03) 1px,
+                    transparent 1px,
+                    transparent 20px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    rgba(0,0,0,0.03),
+                    rgba(0,0,0,0.03) 1px,
+                    transparent 1px,
+                    transparent 20px
+                );
+        }
+
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .color-swatch {
+            width: 35px;
+            height: 35px;
+            border-radius: 5px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.1);
+        }
+
+        .color-swatch.selected {
+            border-color: #333;
+            transform: scale(1.15);
+        }
+
+        .size-controls {
+            margin-bottom: 15px;
+        }
+
+        .size-controls label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .size-controls input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .tools {
+            margin-bottom: 15px;
+        }
+
+        .tool-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: left;
+            background: #e2e8f0;
+            transition: all 0.3s;
+        }
+
+        .tool-btn:hover, .tool-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .export-section {
+            margin-top: 20px;
+        }
+
+        .export-tabs {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .export-tab {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            background: #e2e8f0;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .export-tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .export-content {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background: #48bb78;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .copy-btn:hover {
+            background: #38a169;
+        }
+
+        .stats {
+            background: #e6fffa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .stats strong {
+            color: #2d3748;
+        }
+
+        .wplace-settings {
+            margin-bottom: 15px;
+        }
+
+        .wplace-settings input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .grid-overlay {
+            position: absolute;
+            pointer-events: none;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .sidebar {
+                order: 2;
+            }
+            
+            .canvas-container {
+                order: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 Editor de Pixel Art - WPlace Bot</h1>
+            <p>Desenhe diretamente na tela e gere o script automaticamente!</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Sidebar Esquerda - Ferramentas -->
+            <div class="sidebar">
+                <h3>🛠️ Ferramentas</h3>
+                
+                <div class="tools">
+                    <button class="tool-btn active" data-tool="brush">🖌️ Pincel</button>
+                    <button class="tool-btn" data-tool="eraser">🧽 Borracha</button>
+                    <button class="tool-btn" data-tool="bucket">🪣 Balde</button>
+                    <button class="tool-btn" data-tool="picker">🎯 Conta-gotas</button>
+                    <button class="tool-btn" data-tool="line">📏 Linha</button>
+                    <button class="tool-btn" data-tool="rectangle">⬜ Retângulo</button>
+                </div>
+
+                <h3>🎨 Paleta de Cores</h3>
+                <div class="color-palette" id="colorPalette"></div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Cor Personalizada:</label>
+                    <input type="color" id="customColor" value="#000000" style="width: 100%; height: 40px; border: none; border-radius: 5px;">
+                </div>
+
+                <h3>📐 Tamanho do Canvas</h3>
+                <div class="size-controls">
+                    <label>Largura:</label>
+                    <input type="number" id="canvasWidth" value="20" min="5" max="100">
+                    
+                    <label>Altura:</label>
+                    <input type="number" id="canvasHeight" value="20" min="5" max="100">
+                    
+                    <button class="control-btn primary" onclick="resizeCanvas()">📏 Redimensionar</button>
+                </div>
+            </div>
+
+            <!-- Canvas Central -->
+            <div class="canvas-container">
+                <div class="canvas-controls">
+                    <button class="control-btn secondary" onclick="clearCanvas()">🗑️ Limpar</button>
+                    <button class="control-btn secondary" onclick="undoAction()">↶ Desfazer</button>
+                    <button class="control-btn secondary" onclick="redoAction()">↷ Refazer</button>
+                    <button class="control-btn primary" onclick="generateScript()">📜 Gerar Script</button>
+                    <label class="control-btn secondary" style="cursor: pointer;">
+                        📁 Importar
+                        <input type="file" id="importImage" accept="image/*" style="display: none;">
+                    </label>
+                    <button class="control-btn secondary" onclick="exportPNG()">💾 Exportar PNG</button>
+                </div>
+                
+                <div style="position: relative;">
+                    <canvas id="pixelCanvas" width="400" height="400"></canvas>
+                </div>
+                
+                <div style="margin-top: 15px; text-align: center;">
+                    <label style="margin-right: 15px;">
+                        <input type="checkbox" id="showGrid" checked> Mostrar Grade
+                    </label>
+                    <label>
+                        Zoom: <input type="range" id="zoomSlider" min="1" max="5" value="2" style="width: 100px;">
+                        <span id="zoomValue">2x</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Sidebar Direita - Configurações e Export -->
+            <div class="sidebar">
+                <h3>⚙️ Configurações WPlace</h3>
+                <div class="wplace-settings">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Posição X Inicial:</label>
+                    <input type="number" id="startX" value="100" min="0">
+                    
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Posição Y Inicial:</label>
+                    <input type="number" id="startY" value="100" min="0">
+                    
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Delay entre pixels (ms):</label>
+                    <input type="number" id="pixelDelay" value="1000" min="100" max="10000">
+                    
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Nome da Imagem:</label>
+                    <input type="text" id="imageName" value="meu_desenho" placeholder="nome_da_imagem">
+                </div>
+
+                <div class="stats" id="drawingStats">
+                    <strong>📊 Estatísticas:</strong><br>
+                    Pixels: <span id="pixelCount">0</span><br>
+                    Cores: <span id="colorCount">0</span><br>
+                    Tamanho: <span id="canvasSize">20x20</span><br>
+                    Tempo estimado: <span id="estimatedTime">0s</span>
+                </div>
+
+                <h3>📋 Exportar Script</h3>
+                <div class="export-tabs">
+                    <button class="export-tab active" onclick="showExportTab('script')">Script</button>
+                    <button class="export-tab" onclick="showExportTab('data')">Dados</button>
+                    <button class="export-tab" onclick="showExportTab('function')">Função</button>
+                </div>
+                
+                <div class="export-content" id="exportOutput">
+                    Desenhe algo no canvas para gerar o script!
+                </div>
+                
+                <button class="copy-btn" onclick="copyToClipboard()">📋 Copiar Código</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis globais
+        let canvas = document.getElementById('pixelCanvas');
+        let ctx = canvas.getContext('2d');
+        let currentTool = 'brush';
+        let currentColor = '#000000';
+        let isDrawing = false;
+        let pixels = new Map(); // Armazena os pixels desenhados
+        let undoStack = [];
+        let redoStack = [];
+        let gridSize = 20;
+        let zoom = 2;
+        let canvasPixelWidth = 20;
+        let canvasPixelHeight = 20;
+        let exportMode = 'script';
+
+        // Paleta de cores padrão
+        const defaultPalette = [
+            '#FFFFFF', '#E4E4E4', '#888888', '#222222', '#000000',
+            '#FFA7D1', '#E50000', '#E59500', '#A06A42', '#E5D900',
+            '#94E044', '#02BE01', '#00D3DD', '#0083C7', '#0000EA',
+            '#CF6EE4', '#820080', '#FF0000', '#00FF00', '#0000FF',
+            '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080',
+            '#008000', '#000080', '#808080', '#FF6B6B', '#4ECDC4'
+        ];
+
+        // Inicialização
+        function init() {
+            setupCanvas();
+            setupColorPalette();
+            setupEventListeners();
+            updateStats();
+        }
+
+        function setupCanvas() {
+            resizeCanvasDisplay();
+            ctx.imageSmoothingEnabled = false;
+            drawGrid();
+        }
+
+        function setupColorPalette() {
+            const palette = document.getElementById('colorPalette');
+            palette.innerHTML = '';
+            
+            defaultPalette.forEach(color => {
+                const swatch = document.createElement('div');
+                swatch.className = 'color-swatch';
+                swatch.style.backgroundColor = color;
+                swatch.onclick = () => selectColor(color);
+                palette.appendChild(swatch);
+            });
+            
+            // Aguardar um momento para o DOM ser atualizado antes de selecionar a cor
+            setTimeout(() => {
+                selectColor('#000000');
+            }, 100);
+        }
+
+        function setupEventListeners() {
+            // Canvas events
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseleave', stopDrawing);
+            canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+            // Tool selection
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.addEventListener('click', () => selectTool(btn.dataset.tool));
+            });
+
+            // Custom color
+            document.getElementById('customColor').addEventListener('change', (e) => {
+                selectColor(e.target.value);
+            });
+
+            // Import image
+            document.getElementById('importImage').addEventListener('change', handleImageImport);
+
+            // Grid toggle
+            document.getElementById('showGrid').addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    drawGrid();
+                } else {
+                    redrawCanvas();
+                }
+            });
+
+            // Zoom
+            document.getElementById('zoomSlider').addEventListener('input', (e) => {
+                zoom = parseInt(e.target.value);
+                document.getElementById('zoomValue').textContent = zoom + 'x';
+                resizeCanvasDisplay();
+            });
+
+            // Settings changes
+            ['startX', 'startY', 'pixelDelay', 'imageName'].forEach(id => {
+                document.getElementById(id).addEventListener('input', generateScript);
+            });
+        }
+
+        function selectTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[data-tool="${tool}"]`).classList.add('active');
+            
+            // Change cursor based on tool
+            switch(tool) {
+                case 'brush':
+                    canvas.style.cursor = 'crosshair';
+                    break;
+                case 'eraser':
+                    canvas.style.cursor = 'grab';
+                    break;
+                case 'bucket':
+                    canvas.style.cursor = 'cell';
+                    break;
+                case 'picker':
+                    canvas.style.cursor = 'copy';
+                    break;
+                default:
+                    canvas.style.cursor = 'crosshair';
+            }
+        }
+
+        function selectColor(color) {
+            if (!color || typeof color !== 'string') {
+                color = '#000000';
+            }
+            
+            currentColor = color;
+            document.querySelectorAll('.color-swatch').forEach(swatch => {
+                swatch.classList.remove('selected');
+                try {
+                    const swatchColor = swatch.style.backgroundColor;
+                    if (swatchColor) {
+                        const swatchHex = rgbToHex(swatchColor);
+                        if (swatchColor === color || swatchHex === color) {
+                            swatch.classList.add('selected');
+                        }
+                    }
+                } catch (error) {
+                    // Ignore conversion errors for individual swatches
+                    console.warn('Erro ao converter cor do swatch:', error);
+                }
+            });
+            document.getElementById('customColor').value = color;
+        }
+
+        function getPixelCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvasPixelWidth / rect.width;
+            const scaleY = canvasPixelHeight / rect.height;
+            
+            const x = Math.floor((e.clientX - rect.left) * scaleX);
+            const y = Math.floor((e.clientY - rect.top) * scaleY);
+            
+            return { x: Math.max(0, Math.min(x, canvasPixelWidth - 1)), 
+                    y: Math.max(0, Math.min(y, canvasPixelHeight - 1)) };
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            saveState();
+            
+            const pos = getPixelCoords(e);
+            
+            switch(currentTool) {
+                case 'brush':
+                case 'eraser':
+                    drawPixel(pos.x, pos.y);
+                    break;
+                case 'bucket':
+                    floodFill(pos.x, pos.y);
+                    break;
+                case 'picker':
+                    pickColor(pos.x, pos.y);
+                    break;
+            }
+        }
+
+        function draw(e) {
+            if (!isDrawing || (currentTool !== 'brush' && currentTool !== 'eraser')) return;
+            
+            const pos = getPixelCoords(e);
+            drawPixel(pos.x, pos.y);
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+            updateStats();
+            generateScript();
+        }
+
+        function drawPixel(x, y) {
+            const key = `${x},${y}`;
+            
+            if (currentTool === 'eraser') {
+                pixels.delete(key);
+            } else {
+                pixels.set(key, currentColor);
+            }
+            
+            redrawCanvas();
+        }
+
+        function floodFill(startX, startY) {
+            const startKey = `${startX},${startY}`;
+            const targetColor = pixels.get(startKey) || '#FFFFFF';
+            
+            if (targetColor === currentColor) return;
+            
+            const stack = [{x: startX, y: startY}];
+            const visited = new Set();
+            
+            while (stack.length > 0) {
+                const {x, y} = stack.pop();
+                const key = `${x},${y}`;
+                
+                if (visited.has(key) || x < 0 || x >= canvasPixelWidth || y < 0 || y >= canvasPixelHeight) {
+                    continue;
+                }
+                
+                const currentPixelColor = pixels.get(key) || '#FFFFFF';
+                if (currentPixelColor !== targetColor) continue;
+                
+                visited.add(key);
+                pixels.set(key, currentColor);
+                
+                stack.push({x: x + 1, y: y});
+                stack.push({x: x - 1, y: y});
+                stack.push({x: x, y: y + 1});
+                stack.push({x: x, y: y - 1});
+            }
+            
+            redrawCanvas();
+        }
+
+        function pickColor(x, y) {
+            const key = `${x},${y}`;
+            const color = pixels.get(key);
+            if (color) {
+                selectColor(color);
+            }
+        }
+
+        function redrawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Fill background
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw pixels
+            const pixelWidth = canvas.width / canvasPixelWidth;
+            const pixelHeight = canvas.height / canvasPixelHeight;
+            
+            pixels.forEach((color, key) => {
+                const [x, y] = key.split(',').map(Number);
+                ctx.fillStyle = color;
+                ctx.fillRect(x * pixelWidth, y * pixelHeight, pixelWidth, pixelHeight);
+            });
+            
+            // Draw grid if enabled
+            if (document.getElementById('showGrid').checked) {
+                drawGrid();
+            }
+        }
+
+        function drawGrid() {
+            const pixelWidth = canvas.width / canvasPixelWidth;
+            const pixelHeight = canvas.height / canvasPixelHeight;
+            
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            
+            // Vertical lines
+            for (let x = 0; x <= canvasPixelWidth; x++) {
+                const xPos = x * pixelWidth;
+                ctx.moveTo(xPos, 0);
+                ctx.lineTo(xPos, canvas.height);
+            }
+            
+            // Horizontal lines
+            for (let y = 0; y <= canvasPixelHeight; y++) {
+                const yPos = y * pixelHeight;
+                ctx.moveTo(0, yPos);
+                ctx.lineTo(canvas.width, yPos);
+            }
+            
+            ctx.stroke();
+        }
+
+        function resizeCanvas() {
+            const newWidth = parseInt(document.getElementById('canvasWidth').value);
+            const newHeight = parseInt(document.getElementById('canvasHeight').value);
+            
+            canvasPixelWidth = Math.max(5, Math.min(100, newWidth));
+            canvasPixelHeight = Math.max(5, Math.min(100, newHeight));
+            
+            document.getElementById('canvasWidth').value = canvasPixelWidth;
+            document.getElementById('canvasHeight').value = canvasPixelHeight;
+            
+            resizeCanvasDisplay();
+            updateStats();
+            generateScript();
+        }
+
+        function resizeCanvasDisplay() {
+            const maxSize = 400;
+            const aspectRatio = canvasPixelWidth / canvasPixelHeight;
+            
+            if (aspectRatio > 1) {
+                canvas.width = maxSize * zoom;
+                canvas.height = (maxSize / aspectRatio) * zoom;
+            } else {
+                canvas.width = (maxSize * aspectRatio) * zoom;
+                canvas.height = maxSize * zoom;
+            }
+            
+            redrawCanvas();
+        }
+
+        function clearCanvas() {
+            saveState();
+            pixels.clear();
+            redrawCanvas();
+            updateStats();
+            generateScript();
+        }
+
+        function saveState() {
+            undoStack.push(new Map(pixels));
+            redoStack = [];
+            if (undoStack.length > 50) undoStack.shift();
+        }
+
+        function undoAction() {
+            if (undoStack.length > 0) {
+                redoStack.push(new Map(pixels));
+                pixels = undoStack.pop();
+                redrawCanvas();
+                updateStats();
+                generateScript();
+            }
+        }
+
+        function redoAction() {
+            if (redoStack.length > 0) {
+                undoStack.push(new Map(pixels));
+                pixels = redoStack.pop();
+                redrawCanvas();
+                updateStats();
+                generateScript();
+            }
+        }
+
+        function updateStats() {
+            const pixelCount = pixels.size;
+            const uniqueColors = new Set(pixels.values()).size;
+            const delay = parseInt(document.getElementById('pixelDelay').value);
+            const estimatedTime = Math.ceil((pixelCount * delay) / 1000);
+            
+            document.getElementById('pixelCount').textContent = pixelCount;
+            document.getElementById('colorCount').textContent = uniqueColors;
+            document.getElementById('canvasSize').textContent = `${canvasPixelWidth}x${canvasPixelHeight}`;
+            document.getElementById('estimatedTime').textContent = estimatedTime > 60 ? 
+                `${Math.floor(estimatedTime / 60)}m ${estimatedTime % 60}s` : `${estimatedTime}s`;
+        }
+
+        function generateScript() {
+            if (pixels.size === 0) {
+                document.getElementById('exportOutput').textContent = 'Desenhe algo no canvas para gerar o script!';
+                return;
+            }
+            
+            const pixelData = Array.from(pixels.entries()).map(([key, color]) => {
+                const [x, y] = key.split(',').map(Number);
+                return { x, y, color };
+            });
+            
+            const startX = parseInt(document.getElementById('startX').value);
+            const startY = parseInt(document.getElementById('startY').value);
+            const delay = parseInt(document.getElementById('pixelDelay').value);
+            const imageName = document.getElementById('imageName').value.replace(/[^a-zA-Z0-9_]/g, '_') || 'meu_desenho';
+            
+            let output = '';
+            
+            switch(exportMode) {
+                case 'script':
+                    output = generateFullScript(pixelData, startX, startY, delay, imageName);
+                    break;
+                case 'data':
+                    output = generateDataOnly(pixelData, imageName);
+                    break;
+                case 'function':
+                    output = generateFunctionOnly(pixelData, imageName);
+                    break;
+            }
+            
+            document.getElementById('exportOutput').textContent = output;
+        }
+
+        function generateFullScript(pixelData, startX, startY, delay, imageName) {
+            return `// Script gerado pelo Editor de Pixel Art - WPlace Bot
+// Desenho: ${imageName} (${canvasPixelWidth}x${canvasPixelHeight})
+// Pixels: ${pixelData.length} | Delay: ${delay}ms
+
+const ${imageName}Data = [
+${pixelData.map(p => `    { x: ${p.x}, y: ${p.y}, color: '${p.color}' }`).join(',\n')}
+];
+
+function load${imageName.charAt(0).toUpperCase() + imageName.slice(1)}() {
+    if (typeof wplaceBot === 'undefined') {
+        console.error('❌ WPlace Bot não encontrado! Carregue o bot primeiro.');
+        return;
+    }
+    
+    wplaceBot.loadImageFromData(${imageName}Data, '${imageName}');
+    wplaceBot.setStartPosition(${startX}, ${startY});
+    wplaceBot.setDelay(${delay});
+    
+    console.log('✅ Desenho "${imageName}" carregado!');
+    console.log('📍 Posição: (${startX}, ${startY})');
+    console.log('⏱️ Delay: ${delay}ms');
+    console.log('🎨 Pixels: ${pixelData.length}');
+    console.log('');
+    console.log('Para desenhar, use: wplaceBot.start()');
+}
+
+// Carregar automaticamente
+load${imageName.charAt(0).toUpperCase() + imageName.slice(1)}();
+
+// 🎨 Instruções:
+// 1. Cole este código no console do wplace.live
+// 2. Certifique-se de que o WPlace Bot está carregado
+// 3. Execute wplaceBot.start() para começar a desenhar`;
+        }
+
+        function generateDataOnly(pixelData, imageName) {
+            return `// Dados do desenho: ${imageName}
+const ${imageName}Data = [
+${pixelData.map(p => `    { x: ${p.x}, y: ${p.y}, color: '${p.color}' }`).join(',\n')}
+];
+
+// Informações:
+// Tamanho: ${canvasPixelWidth}x${canvasPixelHeight}
+// Pixels: ${pixelData.length}
+// Cores únicas: ${new Set(pixelData.map(p => p.color)).size}`;
+        }
+
+        function generateFunctionOnly(pixelData, imageName) {
+            return `// Função para carregar o desenho: ${imageName}
+function load${imageName.charAt(0).toUpperCase() + imageName.slice(1)}() {
+    const pixelData = [
+${pixelData.map(p => `        { x: ${p.x}, y: ${p.y}, color: '${p.color}' }`).join(',\n')}
+    ];
+    
+    if (typeof wplaceBot !== 'undefined') {
+        wplaceBot.loadImageFromData(pixelData, '${imageName}');
+        console.log('✅ Desenho "${imageName}" carregado (${pixelData.length} pixels)');
+    } else {
+        console.error('❌ WPlace Bot não encontrado!');
+    }
+}
+
+// Para usar:
+// load${imageName.charAt(0).toUpperCase() + imageName.slice(1)}();
+// wplaceBot.setStartPosition(x, y);
+// wplaceBot.start();`;
+        }
+
+        function showExportTab(mode) {
+            exportMode = mode;
+            document.querySelectorAll('.export-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            generateScript();
+        }
+
+        function copyToClipboard() {
+            const text = document.getElementById('exportOutput').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copiado!';
+                btn.style.background = '#48bb78';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#48bb78';
+                }, 2000);
+            }).catch(err => {
+                console.error('Erro ao copiar:', err);
+                alert('Erro ao copiar para a área de transferência');
+            });
+        }
+
+        function handleImageImport(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    importImageToCanvas(img);
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function importImageToCanvas(img) {
+            // Create temporary canvas for processing
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            // Scale image to fit canvas
+            const scale = Math.min(canvasPixelWidth / img.width, canvasPixelHeight / img.height);
+            const scaledWidth = Math.floor(img.width * scale);
+            const scaledHeight = Math.floor(img.height * scale);
+            
+            tempCanvas.width = scaledWidth;
+            tempCanvas.height = scaledHeight;
+            tempCtx.drawImage(img, 0, 0, scaledWidth, scaledHeight);
+            
+            // Get pixel data
+            const imageData = tempCtx.getImageData(0, 0, scaledWidth, scaledHeight);
+            const data = imageData.data;
+            
+            saveState();
+            pixels.clear();
+            
+            // Convert to pixels
+            for (let y = 0; y < scaledHeight; y++) {
+                for (let x = 0; x < scaledWidth; x++) {
+                    const index = (y * scaledWidth + x) * 4;
+                    const r = data[index];
+                    const g = data[index + 1];
+                    const b = data[index + 2];
+                    const a = data[index + 3];
+                    
+                    if (a > 128) { // Not transparent
+                        const color = rgbToHex(r, g, b);
+                        pixels.set(`${x},${y}`, color);
+                    }
+                }
+            }
+            
+            redrawCanvas();
+            updateStats();
+            generateScript();
+        }
+
+        function exportPNG() {
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            tempCanvas.width = canvasPixelWidth * 10; // Higher resolution
+            tempCanvas.height = canvasPixelHeight * 10;
+            
+            // White background
+            tempCtx.fillStyle = '#FFFFFF';
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // Draw pixels
+            pixels.forEach((color, key) => {
+                const [x, y] = key.split(',').map(Number);
+                tempCtx.fillStyle = color;
+                tempCtx.fillRect(x * 10, y * 10, 10, 10);
+            });
+            
+            // Download
+            const link = document.createElement('a');
+            link.download = `${document.getElementById('imageName').value || 'pixel_art'}.png`;
+            link.href = tempCanvas.toDataURL();
+            link.click();
+        }
+
+        function rgbToHex(input) {
+            // Se já é uma cor hex, retorna como está
+            if (typeof input === 'string' && input.startsWith('#')) {
+                return input;
+            }
+            
+            // Se é uma string RGB, converte
+            if (typeof input === 'string' && input.includes('rgb')) {
+                const result = input.match(/\d+/g);
+                if (!result || result.length < 3) return '#000000';
+                
+                const r = parseInt(result[0]);
+                const g = parseInt(result[1]);
+                const b = parseInt(result[2]);
+                
+                return '#' + [r, g, b].map(x => {
+                    const hex = x.toString(16);
+                    return hex.length === 1 ? '0' + hex : hex;
+                }).join('');
+            }
+            
+            // Se são números separados
+            if (arguments.length === 3) {
+                const r = arguments[0];
+                const g = arguments[1];
+                const b = arguments[2];
+                
+                if (r === undefined || g === undefined || b === undefined) {
+                    return '#000000';
+                }
+                
+                return '#' + [r, g, b].map(x => {
+                    const hex = x.toString(16);
+                    return hex.length === 1 ? '0' + hex : hex;
+                }).join('');
+            }
+            
+            return '#000000';
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            // Aguardar um pouco mais para garantir que tudo está carregado
+            setTimeout(init, 50);
+        });
+    </script>
+</body>
+</html>
