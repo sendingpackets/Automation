@@ -23,7 +23,7 @@ class WPlaceBot {
             return;
         }
         this.ctx = this.canvas.getContext("2d");
-        this.createControlPanel();
+        createControlPanel();
         this.extractColorPalette();
         console.log("🎨 WPlace Bot initialized!");
     }
@@ -254,3 +254,4 @@ Use the control panel or open image-converter.html to convert your own images!
 
 Or use the control panel in the top-right corner!
 `);
+
