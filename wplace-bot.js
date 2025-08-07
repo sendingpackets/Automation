@@ -438,8 +438,8 @@ class WPlaceBot {
         panel.innerHTML = `
             <h3 style="margin: 0 0 10px 0; color: #4CAF50;">🎨 WPlace Bot</h3>
             <div style="margin-bottom: 10px;">
-                <label>Posição X: <input type="number" id="startX" value="100" style="width: 60px;"></label>
-                <label>Posição Y: <input type="number" id="startY" value="100" style="width: 60px;"></label>
+                <label>Position X: <input type="number" id="startX" value="100" style="width: 60px;"></label>
+                <label>Position Y: <input type="number" id="startY" value="100" style="width: 60px;"></label>
             </div>
             <div style="margin-bottom: 10px;">
                 <label>Delay (ms): <input type="number" id="delay" value="1000" style="width: 80px;"></label>
@@ -459,7 +459,7 @@ class WPlaceBot {
                 <button id="stopBot" style="background: #f44336; color: white; border: none; padding: 8px 12px; border-radius: 4px;">⏹️ Stop</button>
             </div>
             <div id="status" style="font-size: 11px; color: #ccc;">
-                Status: Pronto
+                Status: Ready
             </div>
         `;
 
@@ -562,3 +562,4 @@ Use the control panel or open image-converter.html to convert your own images!
 
 Or use the control panel that appeared at the top right corner!
 `);
+
