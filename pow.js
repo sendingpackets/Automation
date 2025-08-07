@@ -2,7 +2,7 @@
  * Bot to automate drawing on wplace.live
  * Instructions:
  * 1. Open the website wplace.live in your browser
- * 2. Open the Developer Console (F12 > Console)
+ * 2. Open Developer Console (F12 > Console)
  * 3. Paste this script and press Enter
  * 4. Configure your image and starting position
  * 5. Run the bot
@@ -10,253 +10,131 @@
 
 class WPlaceBot {
     constructor() {
-        this.isRunning = false;
-        this.delay = 1000; // Delay between clicks in ms
-        this.currentPixel = 0;
-        this.pixels = [];
         this.startX = 0;
         this.startY = 0;
-        this.canvas = null;
+        this.delay = 10;
+        this.imageData = [];
         this.colorPalette = [];
-        this.selectedColor = '#000000';
-    }
-
-    // Initializes the bot
-    init() {
-        console.log('🎨 WPlace Bot initialized!');
-        this.findCanvas();
-        this.findColorPalette();
-        this.createControlPanel();
-    }
-
-    // Finds the canvas on wplace
-    findCanvas() {
-        const possibleSelectors = [
-            'canvas',
-            '#canvas',
-            '.canvas',
-            '[data-testid="canvas"]',
-            'canvas[width]',
-            'canvas[height]'
-        ];
-
-        for (const selector of possibleSelectors) {
-            const element = document.querySelector(selector);
-            if (element) {
-                this.canvas = element;
-                console.log('✅ Canvas found:', selector);
-                return;
-            }
+        this.running = false;
+        this.timer = null;
+        this.canvas = document.querySelector("canvas");
+        if (!this.canvas) {
+            console.error("❌ Canvas not found. Make sure you're on wplace.live");
+            return;
         }
-
-        console.error('❌ Canvas not found. Make sure you are on wplace.live');
+        this.ctx = this.canvas.getContext("2d");
+        this.createControlPanel();
+        this.extractColorPalette();
+        console.log("🎨 WPlace Bot initialized!");
     }
 
-    // Finds the color palette
-    findColorPalette() {
-        const colorElements = document.querySelectorAll('[style*="background-color"], .color, [data-color], .palette-color');
-        
-        colorElements.forEach(element => {
-            const bgColor = window.getComputedStyle(element).backgroundColor;
-            if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)') {
-                this.colorPalette.push({
-                    element: element,
-                    color: bgColor
-                });
-            }
-        });
+    createControlPanel() {
+        const panel = document.createElement("div");
+        panel.style.position = "fixed";
+        panel.style.top = "10px";
+        panel.style.right = "10px";
+        panel.style.padding = "10px";
+        panel.style.backgroundColor = "white";
+        panel.style.border = "1px solid black";
+        panel.style.zIndex = 9999;
+        panel.innerHTML = `
+            <h3>🎨 WPlace Bot</h3>
+            <label>Position X: <input type="number" id="startX" value="0"></label><br>
+            <label>Position Y: <input type="number" id="startY" value="0"></label><br>
+            <label>Delay (ms): <input type="number" id="delay" value="10"></label><br>
+            <button id="loadHeart">❤️ Heart</button>
+            <button id="loadSmiley">😊 Smiley</button>
+            <button id="loadImage">📁 Load Image</button>
+            <button id="openConverter">🔧 Converter</button>
+            <button id="openEditor">🎨 Editor</button>
+            <button id="startBot">▶️ Start</button>
+            <button id="stopBot">⏹️ Stop</button>
+            <div id="botStatus">Status: Ready</div>
+        `;
+        document.body.appendChild(panel);
 
+        document.getElementById("loadHeart").onclick = () => this.loadHeartImage();
+        document.getElementById("loadSmiley").onclick = () => this.loadSmileyImage();
+        document.getElementById("loadImage").onclick = () => this.loadImageFromLocal();
+        document.getElementById("openConverter").onclick = () => window.open("image-converter.html", "_blank");
+        document.getElementById("openEditor").onclick = () => window.open("editor.html", "_blank");
+        document.getElementById("startBot").onclick = () => this.start();
+        document.getElementById("stopBot").onclick = () => this.stop();
+    }
+
+    extractColorPalette() {
+        const colorElements = document.querySelectorAll(".color");
+        this.colorPalette = Array.from(colorElements).map(el => el.style.backgroundColor);
         console.log(`✅ Found ${this.colorPalette.length} colors in the palette`);
     }
 
-    rgbToHex(rgb) {
-        const result = rgb.match(/\d+/g);
-        if (!result) return '#000000';
-        
-        const [r, g, b] = result.map(num => parseInt(num));
-        return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-    }
-
-    findClosestColor(targetColor) {
-        if (this.colorPalette.length === 0) return null;
-
-        let closestColor = this.colorPalette[0];
-        let minDistance = Infinity;
-
-        const target = this.hexToRgb(targetColor);
-        if (!target) return closestColor;
-
-        this.colorPalette.forEach(paletteColor => {
-            const rgb = this.rgbStringToObject(paletteColor.color);
-            if (rgb) {
-                const distance = Math.sqrt(
-                    Math.pow(target.r - rgb.r, 2) +
-                    Math.pow(target.g - rgb.g, 2) +
-                    Math.pow(target.b - rgb.b, 2)
-                );
-
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestColor = paletteColor;
-                }
+    getClosestColor(r, g, b) {
+        let closestIndex = 0;
+        let closestDistance = Infinity;
+        this.colorPalette.forEach((color, index) => {
+            const [cr, cg, cb] = color.match(/\d+/g).map(Number);
+            const distance = Math.sqrt((r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2);
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestIndex = index;
             }
         });
-
-        return closestColor;
+        return closestIndex;
     }
 
-    hexToRgb(hex) {
-        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result ? {
-            r: parseInt(result[1], 16),
-            g: parseInt(result[2], 16),
-            b: parseInt(result[3], 16)
-        } : null;
-    }
-
-    rgbStringToObject(rgb) {
-        const result = rgb.match(/\d+/g);
-        if (!result || result.length < 3) return null;
-        
-        return {
-            r: parseInt(result[0]),
-            g: parseInt(result[1]),
-            b: parseInt(result[2])
-        };
-    }
-
-    selectColor(color) {
-        const closestColor = this.findClosestColor(color);
-        if (closestColor && closestColor.element) {
-            closestColor.element.click();
-            this.selectedColor = color;
-            console.log(`🎨 Selected color: ${color}`);
-            return true;
+    drawPixel(x, y, colorIndex) {
+        const palette = document.querySelectorAll(".color");
+        if (palette[colorIndex]) {
+            palette[colorIndex].click();
         }
-        return false;
-    }
 
-    clickCanvas(x, y) {
-        if (!this.canvas) return false;
-
-        const rect = this.canvas.getBoundingClientRect();
-        const canvasX = x + rect.left;
-        const canvasY = y + rect.top;
-
-        const events = ['mousedown', 'mouseup', 'click'];
-        
-        events.forEach(eventType => {
-            const event = new MouseEvent(eventType, {
-                bubbles: true,
-                cancelable: true,
-                clientX: canvasX,
-                clientY: canvasY,
-                button: 0
-            });
-            this.canvas.dispatchEvent(event);
+        const mouseEvent = new MouseEvent("mousedown", {
+            clientX: x * 10,
+            clientY: y * 10,
+            bubbles: true,
+            cancelable: true,
+            view: window,
         });
 
-        console.log(`🖱️ Clicked at (${x}, ${y})`);
-        return true;
-    }
-
-    loadSimpleImage(imageData, width, height) {
-        this.pixels = [];
-        
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                const index = y * width + x;
-                if (index < imageData.length) {
-                    this.pixels.push({
-                        x: x,
-                        y: y,
-                        color: imageData[index]
-                    });
-                }
-            }
-        }
-
-        console.log(`📷 Image loaded: ${width}x${height} pixels (${this.pixels.length} pixels)`);
-    }
-
-    loadHeartImage() {
-        const heart = [
-            '⬜', '🟥', '🟥', '⬜', '🟥', '🟥', '⬜',
-            '🟥', '🟥', '🟥', '🟥', '🟥', '🟥', '🟥',
-            '🟥', '🟥', '🟥', '🟥', '🟥', '🟥', '🟥',
-            '🟥', '🟥', '🟥', '🟥', '🟥', '🟥', '🟥',
-            '⬜', '🟥', '🟥', '🟥', '🟥', '🟥', '⬜',
-            '⬜', '⬜', '🟥', '🟥', '🟥', '⬜', '⬜',
-            '⬜', '⬜', '⬜', '🟥', '⬜', '⬜', '⬜'
-        ];
-
-        const colorMap = {
-            '🟥': '#FF0000',
-            '⬜': '#FFFFFF'
-        };
-
-        const imageData = heart.map(emoji => colorMap[emoji] || '#FFFFFF');
-        this.loadSimpleImage(imageData, 7, 7);
-    }
-
-    loadSmileyImage() {
-        const smiley = [
-            '⬜', '⬜', '🟨', '🟨', '🟨', '⬜', '⬜',
-            '⬜', '🟨', '🟨', '🟨', '🟨', '🟨', '⬜',
-            '🟨', '🟨', '⬛', '🟨', '⬛', '🟨', '🟨',
-            '🟨', '🟨', '🟨', '🟨', '🟨', '🟨', '🟨',
-            '🟨', '⬛', '🟨', '🟨', '🟨', '⬛', '🟨',
-            '⬜', '🟨', '⬛', '⬛', '⬛', '🟨', '⬜',
-            '⬜', '⬜', '🟨', '🟨', '🟨', '⬜', '⬜'
-        ];
-
-        const colorMap = {
-            '🟨': '#FFFF00',
-            '⬛': '#000000',
-            '⬜': '#FFFFFF'
-        };
-
-        const imageData = smiley.map(emoji => colorMap[emoji] || '#FFFFFF');
-        this.loadSimpleImage(imageData, 7, 7);
+        this.canvas.dispatchEvent(mouseEvent);
     }
 
     async start() {
-        if (this.isRunning) {
-            console.log('⚠️ Bot is already running!');
+        if (this.running) {
+            console.warn("⚠️ Bot is already running");
             return;
         }
+        this.running = true;
+        this.updateStatus("Running...");
 
-        if (this.pixels.length === 0) {
-            console.log('⚠️ Load an image first!');
-            return;
-        }
+        const startX = parseInt(document.getElementById("startX").value);
+        const startY = parseInt(document.getElementById("startY").value);
+        const delay = parseInt(document.getElementById("delay").value);
 
-        this.isRunning = true;
-        this.currentPixel = 0;
-        console.log('🚀 Bot started!');
+        for (let y = 0; y < this.imageData.length; y++) {
+            for (let x = 0; x < this.imageData[y].length; x++) {
+                if (!this.running) return;
+                const [r, g, b, a] = this.imageData[y][x];
+                if (a === 0) continue;
 
-        while (this.isRunning && this.currentPixel < this.pixels.length) {
-            const pixel = this.pixels[this.currentPixel];
-            const x = this.startX + pixel.x;
-            const y = this.startY + pixel.y;
+                const currentColor = this.ctx.getImageData(startX + x, startY + y, 1, 1).data;
+                if (currentColor[0] === r && currentColor[1] === g && currentColor[2] === b) continue;
 
-            if (this.selectColor(pixel.color)) {
-                await this.sleep(200);
-                this.clickCanvas(x, y);
-                console.log(`✅ Pixel ${this.currentPixel + 1}/${this.pixels.length} placed at (${x}, ${y})`);
+                const colorIndex = this.getClosestColor(r, g, b);
+                this.drawPixel(startX + x, startY + y, colorIndex);
+                await this.sleep(delay);
             }
-
-            this.currentPixel++;
-            await this.sleep(this.delay);
         }
 
-        this.isRunning = false;
-        console.log('✅ Bot finished!');
+        this.updateStatus("Stopped");
+        this.running = false;
+        console.log("✅ Bot finished");
     }
 
     stop() {
-        this.isRunning = false;
-        console.log('⏹️ Bot stopped!');
+        this.running = false;
+        this.updateStatus("Stopped");
+        console.log("⏹️ Bot stopped");
     }
 
     sleep(ms) {
@@ -266,57 +144,103 @@ class WPlaceBot {
     setStartPosition(x, y) {
         this.startX = x;
         this.startY = y;
-        console.log(`📍 Start position set: (${x}, ${y})`);
+        document.getElementById("startX").value = x;
+        document.getElementById("startY").value = y;
+        console.log(`📍 Start position set to (${x}, ${y})`);
     }
 
     setDelay(ms) {
         this.delay = ms;
-        console.log(`⏱️ Delay set: ${ms}ms`);
+        document.getElementById("delay").value = ms;
+        console.log(`⏱️ Delay set to ${ms}ms`);
     }
 
-    loadImageFromData(pixelData, name = 'Custom Image') {
-        if (!Array.isArray(pixelData)) {
-            console.error('❌ Image data must be an array of {x, y, color} objects');
-            return false;
-        }
-
-        const isValidData = pixelData.every(pixel => 
-            typeof pixel === 'object' && 
-            typeof pixel.x === 'number' && 
-            typeof pixel.y === 'number' && 
-            typeof pixel.color === 'string'
-        );
-
-        if (!isValidData) {
-            console.error('❌ Invalid format. Each pixel must have {x, y, color}');
-            return false;
-        }
-
-        this.pixels = pixelData.slice();
-        console.log(`✅ ${name} loaded: ${pixelData.length} pixels`);
-        
-        const maxX = Math.max(...pixelData.map(p => p.x));
-        const maxY = Math.max(...pixelData.map(p => p.y));
-        console.log(`📐 Dimensions: ${maxX + 1}x${maxY + 1} pixels`);
-        
-        const uniqueColors = [...new Set(pixelData.map(p => p.color))];
-        console.log(`🎨 Unique colors: ${uniqueColors.length}`);
-
-        return true;
+    loadHeartImage() {
+        const heart = [
+            [[255,0,0,255], [255,0,0,255], [255,0,0,255]],
+            [[255,0,0,255], [255,255,255,0], [255,0,0,255]],
+            [[255,0,0,255], [255,0,0,255], [255,0,0,255]]
+        ];
+        this.imageData = heart;
+        console.log("❤️ Heart loaded");
     }
 
-    // Additional methods (loadImageFromUrl, processImageToPixels, createControlPanel) remain unchanged — if you want the full script including those, let me know.
+    loadSmileyImage() {
+        const smiley = [
+            [[255,255,0,255], [255,255,0,255], [255,255,0,255]],
+            [[255,255,0,255], [0,0,0,255], [255,255,0,255]],
+            [[255,255,0,255], [255,255,0,255], [255,255,0,255]]
+        ];
+        this.imageData = smiley;
+        console.log("😊 Smiley loaded");
+    }
+
+    loadImageFromData(pixelData, name = "Unnamed") {
+        this.imageData = pixelData;
+        console.log(`🖼️ Image '${name}' loaded`);
+    }
+
+    async loadImageFromUrl(url, maxWidth = 50, maxHeight = 50) {
+        try {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.src = url;
+            await img.decode();
+
+            const tempCanvas = document.createElement("canvas");
+            const scale = Math.min(maxWidth / img.width, maxHeight / img.height);
+            tempCanvas.width = img.width * scale;
+            tempCanvas.height = img.height * scale;
+            const tempCtx = tempCanvas.getContext("2d");
+            tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+            const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height).data;
+
+            const pixelData = [];
+            for (let y = 0; y < tempCanvas.height; y++) {
+                const row = [];
+                for (let x = 0; x < tempCanvas.width; x++) {
+                    const i = (y * tempCanvas.width + x) * 4;
+                    row.push([imageData[i], imageData[i + 1], imageData[i + 2], imageData[i + 3]]);
+                }
+                pixelData.push(row);
+            }
+
+            this.imageData = pixelData;
+            console.log("🖼️ Image from URL loaded");
+        } catch (error) {
+            console.error("❌ Error loading image:", error);
+        }
+    }
+
+    loadImageFromLocal() {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/png, image/jpeg";
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                await this.loadImageFromUrl(event.target.result);
+            };
+            reader.readAsDataURL(file);
+        };
+        input.click();
+    }
+
+    updateStatus(text) {
+        document.getElementById("botStatus").innerText = `Status: ${text}`;
+    }
 }
 
-// Initialize the bot
 const wplaceBot = new WPlaceBot();
-wplaceBot.init();
 
 console.log(`
-🎨 WPlace Bot Loaded!
+🎨 WPlace Bot Loaded! 
 
 Available commands:
-- wplaceBot.setStartPosition(x, y) - Set start position
+- wplaceBot.setStartPosition(x, y) - Set initial position
 - wplaceBot.setDelay(ms) - Set delay between clicks
 - wplaceBot.loadHeartImage() - Load heart image
 - wplaceBot.loadSmileyImage() - Load smiley image
@@ -328,5 +252,5 @@ Available commands:
 🔧 Image Converter:
 Use the control panel or open image-converter.html to convert your own images!
 
-Or use the control panel that appeared in the top right corner!
+Or use the control panel in the top-right corner!
 `);
